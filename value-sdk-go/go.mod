@@ -1,4 +1,4 @@
-module github.com/anzuhq/sdk/value
+module github.com/anzuhq/sdk/value-sdk-go
 
 go 1.18
 

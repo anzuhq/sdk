@@ -1,3 +1,3 @@
-module github.com/anzuhq/sdk/service
+module github.com/anzuhq/sdk/service-sdk-go
 
 go 1.18

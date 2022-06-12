@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/anzuhq/sdk/value"
+	"github.com/anzuhq/sdk/value-sdk-go"
 	"net/http"
 )
 
