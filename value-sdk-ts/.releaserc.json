@@ -2,6 +2,7 @@
   "branches": [
     "main"
   ],
+  "tagFormat": "value-sdk-ts-v${version}",
   "plugins": [
     [
       "@semantic-release/commit-analyzer",
