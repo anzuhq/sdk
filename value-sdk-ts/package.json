@@ -4,6 +4,9 @@
   "description": "Anzu Value SDK",
   "main": "dist/index.js",
   "private": false,
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\"",
     "build": "rm -rf dist && tsc",
