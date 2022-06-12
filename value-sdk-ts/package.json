@@ -1,0 +1,27 @@
+{
+  "name": "@anzuhq/value",
+  "version": "0.0.0",
+  "description": "Anzu Value SDK",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\"",
+    "build": "rm -rf dist && tsc",
+    "prepublish": "pnpm run build"
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "author": {
+    "name": "Anzu",
+    "email": "hey@anzuhq.com",
+    "url": "https://anzuhq.com"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.6.2"
+  },
+  "devDependencies": {
+    "semantic-release": "^19.0.3"
+  }
+}
