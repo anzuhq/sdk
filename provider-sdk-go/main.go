@@ -3,6 +3,7 @@ package provider_sdk_go
 import (
 	"context"
 	"flag"
+	"fmt"
 	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
@@ -12,16 +13,30 @@ import (
 
 func Start(provider *Provider) error {
 	ctx, cancel := context.WithCancel(context.Background())
-	logger := logrus.New()
-	logger.SetLevel(logrus.TraceLevel)
+	defer cancel()
 
-	port := flag.Int("port", 0, "port to serve on")
-	flag.Parse()
+	fallbackLevel := "info"
+	if os.Getenv("LOG_LEVEL") != "" {
+		fallbackLevel = os.Getenv("LOG_LEVEL")
+	}
 
+	fallbackPort := 0
 	parsedPort, _ := strconv.Atoi(os.Getenv("PORT"))
 	if parsedPort != 0 {
-		*port = parsedPort
+		fallbackPort = parsedPort
 	}
+
+	port := flag.Int("port", fallbackPort, "port to serve on")
+	logLevel := flag.String("loglevel", fallbackLevel, "log level")
+	flag.Parse()
+
+	parsedLevel, err := logrus.ParseLevel(*logLevel)
+	if err != nil {
+		return fmt.Errorf("failed to parse log level: %w", err)
+	}
+
+	logger := logrus.New()
+	logger.SetLevel(parsedLevel)
 
 	if *port == 0 {
 		logger.Fatal("port flag must be provided with non-zero value")
@@ -40,7 +55,9 @@ func Start(provider *Provider) error {
 		cancel()
 	}()
 
-	err := serve(ctx, baseLogger, provider, *port)
+	baseLogger.WithField("logLevel", logLevel).Traceln("starting provider")
+
+	err = serve(ctx, baseLogger, provider, *port)
 	if err != nil {
 		return err
 	}

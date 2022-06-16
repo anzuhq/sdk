@@ -124,6 +124,7 @@ type setupOptions struct {
 	localProviders             map[string]int
 	configurationValueResolver value.ConfigurationValueResolver
 	shellName                  string
+	logLevel                   string
 }
 
 type Opt func(*setupOptions)
@@ -149,6 +150,12 @@ func WithConfigurationValueResolver(configurationValueResolver value.Configurati
 func WithShellName(shellName string) Opt {
 	return func(o *setupOptions) {
 		o.shellName = shellName
+	}
+}
+
+func WithProviderLogLevel(logLevel string) Opt {
+	return func(o *setupOptions) {
+		o.logLevel = logLevel
 	}
 }
 
@@ -229,7 +236,7 @@ func SetupProviders(ctx context.Context, logger logrus.FieldLogger, providers []
 			}
 		} else {
 			binaryPath := providerBinaryPaths[provider.ProviderVersionId]
-			pc, conn, err = launchProvider(ctx, logger, provider, binaryPath, options.shellName)
+			pc, conn, err = launchProvider(ctx, logger, provider, binaryPath, options.shellName, options.logLevel)
 			if err != nil {
 				return nil, fmt.Errorf("failed to launch provider: %w", err)
 			}
@@ -343,13 +350,21 @@ func untar(logger logrus.FieldLogger, tarballPath string, path string) error {
 	return nil
 }
 
-func launchProvider(ctx context.Context, logger logrus.FieldLogger, provider Provider, binaryPath, shellName string) (protobuf.ProviderClient, *grpc.ClientConn, error) {
+func launchProvider(ctx context.Context, logger logrus.FieldLogger, provider Provider, binaryPath, shellName, logLevel string) (protobuf.ProviderClient, *grpc.ClientConn, error) {
 	port, err := freePort()
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to get free port: %w", err)
 	}
 
-	command := exec.Command(shellName, "-c", fmt.Sprintf("%s --port=%d", binaryPath, port))
+	if logLevel == "" {
+		logLevel = "warn"
+	}
+
+	command := exec.Command(shellName, "-c", binaryPath)
+	command.Env = []string{
+		fmt.Sprintf("PORT=%d", port),
+		fmt.Sprintf("LOG_LEVEL=%s", logLevel),
+	}
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
 
