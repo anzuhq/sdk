@@ -138,6 +138,9 @@ func (s *server) Read(ctx context.Context, in *protobuf.ReadRequest) (*protobuf.
 		State:      &state,
 		Deployment: &deployment,
 	}, environmentProviderConfig)
+	if err != nil {
+		return &protobuf.ReadReply{}, fmt.Errorf("failed to read resource: %w", err)
+	}
 
 	marshaledState, err := json.Marshal(resp.NextState)
 	if err != nil {
@@ -208,6 +211,9 @@ func (s *server) Update(ctx context.Context, in *protobuf.UpdateRequest) (*proto
 		Inputs:     &inputValues,
 		Deployment: &deployment,
 	}, environmentProviderConfig)
+	if err != nil {
+		return &protobuf.UpdateReply{}, fmt.Errorf("failed to update resource: %w", err)
+	}
 
 	marshaledState, err := json.Marshal(resp.NextState)
 	if err != nil {
@@ -272,6 +278,9 @@ func (s *server) Delete(ctx context.Context, in *protobuf.DeleteRequest) (*proto
 		State:      &state,
 		Deployment: &deployment,
 	}, environmentProviderConfig)
+	if err != nil {
+		return &protobuf.DeleteReply{}, fmt.Errorf("failed to delete resource: %w", err)
+	}
 
 	return &protobuf.DeleteReply{}, nil
 }
