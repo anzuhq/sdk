@@ -361,10 +361,19 @@ func launchProvider(ctx context.Context, logger logrus.FieldLogger, provider Pro
 	}
 
 	command := exec.Command(shellName, "-c", binaryPath)
+	
 	command.Env = []string{
 		fmt.Sprintf("PORT=%d", port),
 		fmt.Sprintf("LOG_LEVEL=%s", logLevel),
 	}
+
+	passVariables := []string{"HOME", "PWD", "USER", "PATH"}
+	for _, varName := range passVariables {
+		if varValue := os.Getenv(varName); varValue != "" {
+			command.Env = append(command.Env, fmt.Sprintf("%s=%s", varName, varValue))
+		}
+	}
+
 	command.Stdout = os.Stdout
 	command.Stderr = os.Stderr
 
