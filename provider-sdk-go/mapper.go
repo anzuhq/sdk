@@ -82,23 +82,32 @@ func (p *ResourceInfoProviderData) GetResourceKind() string {
 type DeploymentInfoProvider interface {
 	GetDeploymentId() string
 	GetIdempotencyKey() string
+	GetDeploymentProviderToken() string
 }
 
 type DeploymentInfoProviderData struct {
 	DeploymentId string `json:"deploymentId"`
 
-	// GetIdempotencyKey returns a unique identifier for the deployment step associated to the request
-	// and can be used to deduplicate operations that should happen only once in case of a retry.
-	// This key is unique to the current step and deployment, a new deployment will generate new idempotency keys for every step.
 	IdempotencyKey string `json:"idempotencyKey"`
+
+	DeploymentProviderToken string `json:"deploymentProviderToken"`
 }
 
 func (p *DeploymentInfoProviderData) GetDeploymentId() string {
 	return p.DeploymentId
 }
 
+// GetIdempotencyKey returns a unique identifier for the deployment step associated to the request
+// and can be used to deduplicate operations that should happen only once in case of a retry.
+// This key is unique to the current step and deployment, a new deployment will generate new idempotency keys for every step.
 func (p *DeploymentInfoProviderData) GetIdempotencyKey() string {
 	return p.IdempotencyKey
+}
+
+// GetDeploymentProviderToken returns a temporary token that can be used to
+// verify API requests are sent by the current deployment. Tokens expire after 3h after the deployment was started.
+func (p *DeploymentInfoProviderData) GetDeploymentProviderToken() string {
+	return p.DeploymentProviderToken
 }
 
 type ProviderConfiguration interface {
