@@ -42,7 +42,7 @@ type ResourceInfoProvider interface {
 
 	// GetResourceNameWithSeparator behaves like GetResourceName but allows for a custom separator to be used.
 	// Uses CollisionFreeNameWithSeparator.
-	GetResourceNameWithSeparator(sep string) string
+	GetResourceNameWithSeparator(sep rune) string
 
 	// GetRawResourceName returns the user-supplied name of the resource.
 	// Warning: This is *not* unique across environments, and may lead to name clashes, using GetResourceName instead is highly recommended.
@@ -64,10 +64,10 @@ func (p *ResourceInfoProviderData) GetResourceId() string {
 }
 
 func (p *ResourceInfoProviderData) GetResourceName() string {
-	return p.GetResourceNameWithSeparator("-")
+	return p.GetResourceNameWithSeparator('-')
 }
 
-func (p *ResourceInfoProviderData) GetResourceNameWithSeparator(sep string) string {
+func (p *ResourceInfoProviderData) GetResourceNameWithSeparator(sep rune) string {
 	return CollisionFreeNameWithSeparator(p.ResourceName, sep, p.rand)
 }
 

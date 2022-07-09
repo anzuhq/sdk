@@ -319,6 +319,7 @@ type DefinitionBase struct {
 
 type ScalarDefinition struct {
 	ExpectedUnderlyingType ScalarUnderlyingType `json:"expectedUnderlyingType,omitempty"`
+	IsMultiLine            bool                 `json:"isMultiLine,omitempty"`
 }
 
 type ObjectDefinition struct {
