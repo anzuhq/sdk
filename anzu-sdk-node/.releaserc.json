@@ -1,7 +1,6 @@
 {
   "branches": [
-    "main",
-    "bruno/monitoring"
+    "main"
   ],
   "tagFormat": "anzu-sdk-node-v${version}",
   "plugins": [
