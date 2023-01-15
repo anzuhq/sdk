@@ -1,6 +1,7 @@
 {
   "branches": [
-    "main"
+    "main",
+    "bruno/monitoring"
   ],
   "tagFormat": "anzu-sdk-node-v${version}",
   "plugins": [
@@ -9,6 +10,10 @@
       {
         "preset": "angular",
         "releaseRules": [
+          {
+            "type": "force-release",
+            "release": "major"
+          },
           {
             "type": "docs",
             "scope": "README",
