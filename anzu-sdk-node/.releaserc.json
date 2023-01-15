@@ -7,24 +7,26 @@
     [
       "@semantic-release/commit-analyzer",
       {
-        "preset": "angular",
         "releaseRules": [
           {
-            "type": "force-release",
-            "release": "major"
-          },
-          {
             "type": "docs",
-            "scope": "README",
+            "scope": "anzu-sdk-node",
             "release": "patch"
           },
           {
             "type": "refactor",
+            "scope": "anzu-sdk-node",
             "release": "patch"
           },
           {
-            "type": "style",
-            "release": "patch"
+            "type": "feat",
+            "scope": "anzu-sdk-node",
+            "release": "minor"
+          },
+          {
+            "type": "fix",
+            "scope": "anzu-sdk-node",
+            "release": "minor"
           }
         ],
         "parserOpts": {
