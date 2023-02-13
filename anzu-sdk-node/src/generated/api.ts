@@ -65,6 +65,16 @@ export interface Environment {
   created_at: string;
   updated_at: string | null;
   staging_webhook_secret: string | null;
+  currency: Currency;
+}
+
+export interface MonetaryValueExchangeRate {
+  environment: string;
+  from_currency: Currency;
+  to_currency: Currency;
+  rate: number;
+  created_at: string;
+  updated_at: string | null;
 }
 
 export interface AccessTokenBase {
@@ -151,6 +161,21 @@ export interface WebhookDelivery {
   response_body: string | null;
 }
 
+export interface DatabaseView extends DatabaseViewBase {
+  id: string;
+  environment: string;
+  created_at: string;
+  updated_at: string | null;
+  created_by: string | null;
+}
+
+export enum Currency {
+  USDollar = 'USD',
+  Euro = 'EUR',
+  BritishPound = 'GBP',
+  JapaneseYen = 'JPY',
+}
+
 export enum AccessTokenKind {
   Account = 'account',
   Workspace = 'workspace',
@@ -162,6 +187,19 @@ export enum WebhookDeliveryStatus {
   Failure = 'failure',
   Timeout = 'timeout',
   Forwarded = 'forwarded',
+}
+
+export enum DatabaseViewKind {
+  UserManagementUserIdentities = 'user_management_user_identities',
+
+  CRMContacts = 'crm_contacts',
+  CRMCompanies = 'crm_companies',
+  CRMDeals = 'crm_deals',
+}
+
+export enum DatabaseViewLayout {
+  Table = 'table',
+  Board = 'board',
 }
 
 export type AccessToken = PersonalAccessToken | WorkspaceAccessToken;
@@ -238,6 +276,8 @@ export interface QueryArgs {
   pagination: PaginationArgs;
   filters: DatabaseFilter[];
   sort: DatabaseSort | null;
+  search: DatabaseSearch | null;
+  groupBy: DatabaseGroupBy | null;
 }
 
 export enum DatabaseIcon {
@@ -263,14 +303,14 @@ export enum DatabaseColor {
   Black = 'gray',
   Orange = 'orange',
   Green = 'green',
+  Red = 'red',
 }
 
-export enum DatabaseCellRenderer {
+export enum DatabaseStringValueType {
   Email = 'email',
   Avatar = 'avatar',
-  UserIdentity = 'user_identity',
-  WorkspaceMember = 'workspace_member',
   URL = 'url',
+  PhoneNumber = 'phone_number',
 }
 
 export interface DatabaseStorageSettings {
@@ -285,17 +325,23 @@ export interface DatabaseBaseField {
   label: string;
   labelColor?: DatabaseColor;
 
+  storage?: DatabaseFieldStorageMode;
+
   isRequired?: boolean;
   allowedFilterOperators?: DatabaseFilterOperator[];
   isSortable?: boolean;
-  storage?: DatabaseFieldStorageMode;
+  defaultSortDirection?: DatabaseSortDirection;
   isComputed?: boolean;
-
-  cellRenderer?: DatabaseCellRenderer;
+  isTitle?: boolean;
+  isSearchable?: boolean;
+  isGroupable?: boolean;
+  isUserEditable?: boolean;
 }
 
 export interface DatabaseStringField extends DatabaseBaseField {
   kind: DatabaseFieldKind.String;
+
+  valueType?: DatabaseStringValueType;
 }
 
 export interface DatabaseIDField extends DatabaseBaseField {
@@ -328,6 +374,10 @@ export interface DatabaseBooleanField extends DatabaseBaseField {
   kind: DatabaseFieldKind.Boolean;
 }
 
+export interface DatabaseMonetaryValueField extends DatabaseBaseField {
+  kind: DatabaseFieldKind.MonetaryValue;
+}
+
 export enum DatabaseFieldKind {
   String = 'string',
   DateTime = 'datetime',
@@ -335,6 +385,7 @@ export enum DatabaseFieldKind {
   ID = 'id',
   Number = 'number',
   Boolean = 'boolean',
+  MonetaryValue = 'monetary_value',
 }
 
 export enum DatabaseFieldStorageMode {
@@ -348,6 +399,7 @@ export enum DatabaseRelatedEntity {
   CRMDeal = 'crm_deal',
   CRMNote = 'crm_note',
   UserManagementUserIdentity = 'user_management_user_identity',
+  WorkspaceMember = 'workspace_member',
 }
 
 export type DatabaseField =
@@ -356,12 +408,13 @@ export type DatabaseField =
   | DatabaseEnumField
   | DatabaseIDField
   | DatabaseNumberField
-  | DatabaseBooleanField;
+  | DatabaseBooleanField
+  | DatabaseMonetaryValueField;
 
 export interface DatabaseFilter {
   field: string;
   operator: DatabaseFilterOperator;
-  value: string;
+  value: string | '@anzu_current_workspace_member';
 }
 
 export enum DatabaseFilterOperator {
@@ -380,7 +433,21 @@ export enum DatabaseFilterOperator {
   LessThanOrEqual = 'lte',
 }
 
+export interface DatabaseGroupBy {
+  // stored: field to group by
+  field: string;
+
+  // state: current group, null for no assigned group, undefined for all groups
+  currentGroup?: string | null;
+}
+
+export interface DatabaseMonetaryValue {
+  value: number;
+  currency: Currency;
+}
+
 export interface PaginationArgs {
+  // values in here are state-only (no value of storing them in the database)
   after: string | null;
   first: number | null;
   before: string | null;
@@ -394,21 +461,65 @@ export interface PageInfo {
   endCursor: string | null;
 }
 
+export interface PaginatedResult<T> {
+  data: T[];
+  pageInfo: PageInfo;
+}
+
 export interface DatabaseSchema {
+  allowedViewLayouts?: DatabaseViewLayout[];
   fields: DatabaseField[];
+}
+
+export interface DatabaseSearch {
+  value: string;
 }
 
 export interface DatabaseSort {
   field: string;
-  direction: 'asc' | 'desc';
+  direction: DatabaseSortDirection;
 }
 
-export interface DatabaseView {
-  id: string;
+export enum DatabaseSortDirection {
+  Ascending = 'asc',
+  Descending = 'desc',
+}
+
+export interface DatabaseViewFieldConfig {
   name: string;
-  filters?: DatabaseFilter[];
-  visibleFields: string[];
-  sort?: DatabaseSort;
+  isHidden?: boolean;
+}
+
+export interface DatabaseViewBase {
+  kind: DatabaseViewKind;
+  layout: DatabaseViewLayout;
+  name: string;
+  is_system: boolean;
+  is_public: boolean;
+
+  filters: DatabaseFilter[];
+  sort: DatabaseSort | null;
+
+  fields: DatabaseViewFieldConfig[];
+
+  // TODO re-check if pagination should actually be stored in the view,
+  // TODO we may want page size but don't care about cursor values in stored views
+  pagination: PaginationArgs | null;
+  group_by: DatabaseGroupBy | null;
+}
+
+export interface DatabaseTableView extends DatabaseViewBase {
+  layout: DatabaseViewLayout.Table;
+  pagination: PaginationArgs | null;
+
+  // TODO may allow grouping on table view in the future
+  group_by: null;
+}
+
+export interface DatabaseBoardView extends DatabaseViewBase {
+  layout: DatabaseViewLayout.Board;
+  pagination: null;
+  group_by: DatabaseGroupBy | null;
 }
 
 export interface AnalyticsEvent {
@@ -483,12 +594,100 @@ export interface AnalyticsConfigResp {
   scriptUrl: string;
 }
 
+export interface AnalyticsSchemaResp {
+  analyticsEventFilterableFields: Array<{
+    name: string;
+    displayName: string;
+    type: string;
+  }>;
+}
+
+export interface ICRMActivity {
+  id: string;
+  environment: string;
+
+  kind: CRMActivityKind;
+
+  company: string | null;
+  contact: string | null;
+  deal: string | null;
+  note: string | null;
+
+  created_at: string;
+
+  actor_kind: CRMActivityActorKind;
+  actor: string | null;
+
+  payload: unknown;
+}
+
+export interface ICRMActivityAssignedTo extends ICRMActivity {
+  kind: CRMActivityKind.AssignedTo;
+  payload: {
+    from: string | null;
+    to: string;
+  };
+}
+
+export interface ICRMActivityUnassigned extends ICRMActivity {
+  kind: CRMActivityKind.Unassigned;
+  payload: {
+    from: string;
+  };
+}
+
+export enum CRMActivityKind {
+  FieldChanged = 'FieldChanged',
+  AssignedTo = 'AssignedTo',
+  Unassigned = 'Unassigned',
+  CommentAdded = 'CommentAdded',
+}
+
+export enum CRMActivityActorKind {
+  WorkspaceMember = 'WorkspaceMember',
+  System = 'System',
+}
+
+export type CRMActivity = ICRMActivityAssignedTo | ICRMActivityUnassigned;
+
+export interface ICRMCompany {
+  id: string;
+  environment: string;
+
+  name: string;
+  description: string | null;
+  domain: string | null;
+  industry: string | null;
+  number_of_employees: number | null;
+  annual_revenue: DatabaseMonetaryValue | null;
+  linkedin_url: string | null;
+  timezone: string | null;
+  city: string | null;
+  state: string | null;
+  postal_code: string | null;
+  country: string | null;
+
+  created_at: string;
+  updated_at: string | null;
+
+  stage: string | null;
+  assigned_to: string | null;
+
+  // we should flatten properties on the contact object
+  // so that fetching and updating happens on one layer
+  // and there's no different between "immediate" and "nested" properties
+  // properties: Record<string, unknown>;
+}
+
 export interface ICRMContact {
   environment: string;
   id: string;
 
   company: string | null;
   job_title: string | null;
+
+  // COMPUTED
+  name: string;
 
   full_name: string | null;
   given_name: string | null;
@@ -508,7 +707,51 @@ export interface ICRMContact {
   stage: string | null;
   assigned_to: string | null;
 
-  properties: Record<string, unknown>;
+  // we should flatten properties on the contact object
+  // so that fetching and updating happens on one layer
+  // and there's no different between "immediate" and "nested" properties
+  // properties: Record<string, unknown>;
+}
+
+export interface ICRMDealPipeline {
+  id: string;
+  environment: string;
+
+  name: string;
+  description: string | null;
+
+  stages: DatabaseEnumValue[];
+
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface ICRMDeal {
+  id: string;
+  environment: string;
+
+  pipeline: string;
+
+  name: string;
+  description: string | null;
+
+  company: string | null;
+  contact: string | null;
+  kind: string | null;
+  stage: string;
+  priority: string | null;
+  value: DatabaseMonetaryValue | null;
+
+  created_at: string;
+  updated_at: string | null;
+  closed_at: string | null;
+
+  assigned_to: string | null;
+
+  // we should flatten properties on the contact object
+  // so that fetching and updating happens on one layer
+  // and there's no different between "immediate" and "nested" properties
+  // properties: Record<string, unknown>;
 }
 
 export interface CRMEnvironmentConfig {
@@ -584,7 +827,7 @@ export interface IUserManagementEventUserIdentityCreated extends IEvent {
       id: string;
       email?: string;
       provider: AuthProviderKind;
-      name?: string;
+      fullName?: string;
       givenName?: string;
       familyName?: string;
       userName?: string;
@@ -721,8 +964,11 @@ export interface IUserIdentity {
   updated_at: string | null;
   last_login_at: string | null;
 
+  // COMPUTED
+  name: string;
+
   email: string | null;
-  name: string | null;
+  full_name: string | null;
   given_name: string | null;
   family_name: string | null;
   username: string | null;
