@@ -522,86 +522,6 @@ export interface DatabaseBoardView extends DatabaseViewBase {
   group_by: DatabaseGroupBy | null;
 }
 
-export interface AnalyticsEvent {
-  workspace_id: string;
-  environment_id: string;
-
-  event_id: string;
-
-  category: string;
-  kind: string;
-
-  created_at: string;
-  page_duration: number | null;
-  received_at: string;
-  ingested_at: string;
-
-  user_id: string;
-  user_identity: string | null;
-  session_id: string;
-
-  user_agent: string;
-  url: string;
-  referrer: string;
-  ip_address: string;
-
-  country: string;
-
-  attributes: [string, string][];
-}
-
-export interface AnalyticsTimeRange {
-  relative?: AnalyticsRelativeTimeRange;
-  from?: string;
-  to?: string;
-}
-
-export interface AnalyticsEventFilter {
-  field: string;
-  operator: string;
-  value: unknown;
-}
-
-export interface AnalyticsCountBucket {
-  bucket: string;
-  count: number;
-}
-
-export interface AnalyticsCategoryCountBucket {
-  category: string;
-  results: AnalyticsCountBucket[];
-}
-
-export enum AnalyticsRelativeTimeRange {
-  Last24Hours = 'last_24_hours',
-  Last7Days = 'last_7_days',
-  Last30Days = 'last_30_days',
-  Last90Days = 'last_90_days',
-}
-
-export interface AnalyticsEnvironmentConfig {
-  environment: string;
-  workspace: string;
-
-  allowed_origins: string[];
-
-  created_at: string;
-  updated_at: string | null;
-}
-
-export interface AnalyticsConfigResp {
-  config: AnalyticsEnvironmentConfig;
-  scriptUrl: string;
-}
-
-export interface AnalyticsSchemaResp {
-  analyticsEventFilterableFields: Array<{
-    name: string;
-    displayName: string;
-    type: string;
-  }>;
-}
-
 export interface ICRMActivity {
   id: string;
   environment: string;
@@ -779,6 +699,86 @@ export enum CRMNoteKind {
 
 export interface CRMConfigResp {
   config: CRMEnvironmentConfig;
+}
+
+export interface InsightsEvent {
+  workspace_id: string;
+  environment_id: string;
+
+  event_id: string;
+
+  category: string;
+  kind: string;
+
+  created_at: string;
+  page_duration: number | null;
+  received_at: string;
+  ingested_at: string;
+
+  user_id: string;
+  user_identity: string | null;
+  session_id: string;
+
+  user_agent: string;
+  url: string;
+  referrer: string;
+  ip_address: string;
+
+  country: string;
+
+  attributes: [string, string][];
+}
+
+export interface InsightsTimeRange {
+  relative?: InsightsRelativeTimeRange;
+  from?: string;
+  to?: string;
+}
+
+export interface InsightsEventFilter {
+  field: string;
+  operator: string;
+  value: unknown;
+}
+
+export interface InsightsCountBucket {
+  bucket: string;
+  count: number;
+}
+
+export interface InsightsCategoryCountBucket {
+  category: string;
+  results: InsightsCountBucket[];
+}
+
+export enum InsightsRelativeTimeRange {
+  Last24Hours = 'last_24_hours',
+  Last7Days = 'last_7_days',
+  Last30Days = 'last_30_days',
+  Last90Days = 'last_90_days',
+}
+
+export interface InsightsEnvironmentConfig {
+  environment: string;
+  workspace: string;
+
+  allowed_origins: string[];
+
+  created_at: string;
+  updated_at: string | null;
+}
+
+export interface InsightsConfigResp {
+  config: InsightsEnvironmentConfig;
+  scriptUrl: string;
+}
+
+export interface InsightsSchemaResp {
+  insightsEventFilterableFields: Array<{
+    name: string;
+    displayName: string;
+    type: string;
+  }>;
 }
 
 export interface IUserAuthAttempt {
