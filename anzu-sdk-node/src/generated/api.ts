@@ -7,6 +7,7 @@ export interface Account {
   gravatar_url: string | null;
   created_at: string;
   updated_at: string | null;
+  early_access_enabled: boolean;
 }
 
 export interface Workspace {
@@ -259,6 +260,12 @@ export interface IWebhookDeliveryContent extends IEvent {
     webhookId: string;
     deliveryId: string;
   };
+}
+
+export interface AccountResponse {
+  id: string;
+  name: string;
+  earlyAccessEnabled: boolean;
 }
 
 export interface ProfileResponse {
