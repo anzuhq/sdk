@@ -139,6 +139,12 @@ export interface Event {
   kind: EventKind;
   data: IEvent;
   created_at: string;
+
+  // denormalized data
+  actor_kind: EventActorKind;
+  actor_id: string;
+  primary_resource_kind: EventResourceKind;
+  primary_resource_id: string;
 }
 
 export interface WebhookDelivery {
@@ -230,12 +236,28 @@ export enum ErrorCode {
   TriggerUnsupportedEventKind = 'TRIGGER_UNSUPPORTED_EVENT_KIND',
 }
 
-export interface IEvent {
+export interface EventWorkspaceMemberActor {
+  kind: EventActorKind.WorkspaceMember;
   id: string;
-  kind: EventKind;
+}
+
+export interface EventSystemActor {
+  kind: EventActorKind.System;
+}
+
+export interface EventResource<T extends EventResourceKind> {
+  kind: T;
+  id: string;
+}
+
+export interface IEvent<T extends EventKind = EventKind> {
+  id: string;
+  kind: T;
   payload: unknown;
   createdAt: string;
   version: string;
+  actor: EventActor;
+  resource?: EventResource<EventResourceKind>;
 }
 
 export enum EventKind {
@@ -246,7 +268,57 @@ export enum EventKind {
   UserIdentitySuspended = 'user_management.user_identity_suspended',
   UserIdentityUnsuspended = 'user_management.user_identity_unsuspended',
   UserIdentityDeleted = 'user_management.user_identity_deleted',
+
+  CRMContactCreated = 'crm.contact_created',
+  CRMContactUpdated = 'crm.contact_updated',
+  CRMContactDeleted = 'crm.contact_deleted',
+  CRMContactAssigned = 'crm.contact_assigned',
+  CRMContactUnassigned = 'crm.contact_unassigned',
+
+  CRMCompanyCreated = 'crm.company_created',
+  CRMCompanyUpdated = 'crm.company_updated',
+  CRMCompanyDeleted = 'crm.company_deleted',
+  CRMCompanyAssigned = 'crm.company_assigned',
+  CRMCompanyUnassigned = 'crm.company_unassigned',
+
+  CRMDealCreated = 'crm.deal_created',
+  CRMDealUpdated = 'crm.deal_updated',
+  CRMDealDeleted = 'crm.deal_deleted',
+  CRMDealAssigned = 'crm.deal_assigned',
+  CRMDealUnassigned = 'crm.deal_unassigned',
+
+  CRMCommentCreated = 'crm.comment_created',
 }
+
+export enum EventActorKind {
+  System = 'system',
+  WorkspaceMember = 'workspace_member',
+}
+
+export enum EventResourceKind {
+  Webhook = 'webhook',
+  UserIdentity = 'user_management.user_identity',
+  CRMContact = 'crm.contact',
+  CRMCompany = 'crm.company',
+  CRMDeal = 'crm.deal',
+  CRMNotes = 'crm.notes',
+}
+
+export type AllEvents =
+  | WebhookCreatedEvent
+  | WebhookEnabledEvent
+  | CRMContactAssignedEvent
+  | CRMContactUnassignedEvent
+  | CRMCompanyAssignedEvent
+  | CRMCompanyUnassignedEvent
+  | CRMDealAssignedEvent
+  | CRMDealUnassignedEvent
+  | CRMCompanyCreatedEvent
+  | CRMContactCreatedEvent
+  | CRMDealCreatedEvent
+  | CRMCommentCreatedEvent;
+
+export type EventActor = EventWorkspaceMemberActor | EventSystemActor;
 
 export interface IWebhookDeliveryContent extends IEvent {
   // event scope
@@ -272,6 +344,14 @@ export interface ProfileResponse {
   id: string;
   name: string;
   gravatar_url: string | null;
+}
+
+export interface WebhookCreatedEvent extends IEvent<EventKind.WebhookCreated> {
+  resource: EventResource<EventResourceKind.Webhook>;
+}
+
+export interface WebhookEnabledEvent extends IEvent<EventKind.WebhookEnabled> {
+  resource: EventResource<EventResourceKind.Webhook>;
 }
 
 export interface RenderableIcon {
@@ -349,6 +429,7 @@ export interface DatabaseStringField extends DatabaseBaseField {
   kind: DatabaseFieldKind.String;
 
   valueType?: DatabaseStringValueType;
+  isMultiline?: boolean;
 }
 
 export interface DatabaseIDField extends DatabaseBaseField {
@@ -529,53 +610,75 @@ export interface DatabaseBoardView extends DatabaseViewBase {
   group_by: DatabaseGroupBy | null;
 }
 
-export interface ICRMActivity {
+export interface ParagraphNode {
+  kind: RichTextNodeKind.Paragraph;
+  content: TextNode[];
+}
+
+export interface TextNode {
+  kind: RichTextNodeKind.Text;
+  content: string;
+}
+
+export interface RootNode {
+  kind: RichTextNodeKind.Root;
+  version: string;
+  content: ContentNode[];
+}
+
+export interface ICRMComment {
   id: string;
   environment: string;
-
-  kind: CRMActivityKind;
+  kind: CRMCommentKind;
 
   company: string | null;
   contact: string | null;
   deal: string | null;
-  note: string | null;
+  notes: string | null;
 
+  reply_to: string | null;
+
+  created_by: string;
   created_at: string;
+  updated_at: string | null;
 
-  actor_kind: CRMActivityActorKind;
-  actor: string | null;
-
-  payload: unknown;
+  content: RootNode;
 }
 
-export interface ICRMActivityAssignedTo extends ICRMActivity {
-  kind: CRMActivityKind.AssignedTo;
+export interface CRMCommentCreatedEvent extends IEvent<EventKind.CRMCommentCreated> {
   payload: {
-    from: string | null;
-    to: string;
+    id: string;
+    kind: CRMCommentKind;
+    company: string | null;
+    contact: string | null;
+    deal: string | null;
+    notes: string | null;
+    reply_to: string | null;
+    created_by: string;
+    content: RootNode;
   };
+  // Use resource as parent identifier
+  resource:
+    | EventResource<EventResourceKind.CRMCompany>
+    | EventResource<EventResourceKind.CRMDeal>
+    | EventResource<EventResourceKind.CRMContact>
+    | EventResource<EventResourceKind.CRMNotes>;
 }
 
-export interface ICRMActivityUnassigned extends ICRMActivity {
-  kind: CRMActivityKind.Unassigned;
-  payload: {
-    from: string;
-  };
+export enum RichTextNodeKind {
+  Paragraph = 'paragraph',
+  Text = 'text',
+  Root = 'root',
 }
 
-export enum CRMActivityKind {
-  FieldChanged = 'FieldChanged',
-  AssignedTo = 'AssignedTo',
-  Unassigned = 'Unassigned',
-  CommentAdded = 'CommentAdded',
+export enum CRMCommentKind {
+  Company = 'company',
+  Contact = 'contact',
+  Deal = 'deal',
+  Notes = 'notes',
 }
 
-export enum CRMActivityActorKind {
-  WorkspaceMember = 'WorkspaceMember',
-  System = 'System',
-}
-
-export type CRMActivity = ICRMActivityAssignedTo | ICRMActivityUnassigned;
+export type ContentNode = ParagraphNode;
 
 export interface ICRMCompany {
   id: string;
@@ -604,6 +707,42 @@ export interface ICRMCompany {
   // so that fetching and updating happens on one layer
   // and there's no different between "immediate" and "nested" properties
   // properties: Record<string, unknown>;
+}
+
+export interface CRMCompanyCreatedEvent extends IEvent<EventKind.CRMCompanyCreated> {
+  payload: {
+    id: string;
+    name: string;
+    description: string | null;
+    domain: string | null;
+    industry: string | null;
+    number_of_employees: number | null;
+    annual_revenue: DatabaseMonetaryValue | null;
+    linkedin_url: string | null;
+    timezone: string | null;
+    city: string | null;
+    state: string | null;
+    postal_code: string | null;
+    country: string | null;
+    stage: string | null;
+    assigned_to: string | null;
+  };
+  resource: EventResource<EventResourceKind.CRMCompany>;
+}
+
+export interface CRMCompanyAssignedEvent extends IEvent<EventKind.CRMCompanyAssigned> {
+  payload: {
+    from: string | null;
+    to: string;
+  };
+  resource: EventResource<EventResourceKind.CRMCompany>;
+}
+
+export interface CRMCompanyUnassignedEvent extends IEvent<EventKind.CRMCompanyUnassigned> {
+  payload: {
+    from: string;
+  };
+  resource: EventResource<EventResourceKind.CRMCompany>;
 }
 
 export interface ICRMContact {
@@ -638,6 +777,41 @@ export interface ICRMContact {
   // so that fetching and updating happens on one layer
   // and there's no different between "immediate" and "nested" properties
   // properties: Record<string, unknown>;
+}
+
+export interface CRMContactCreatedEvent extends IEvent<EventKind.CRMContactCreated> {
+  payload: {
+    id: string;
+    company?: string | null;
+    email?: string | null;
+    phone_number?: string | null;
+    job_title?: string | null;
+    given_name?: string | null;
+    family_name?: string | null;
+    full_name?: string | null;
+    user_identity?: string | null;
+    lead_status?: string | null;
+    stage?: string | null;
+    assigned_to?: string | null;
+    source?: string | null;
+    referrer?: string | null;
+  };
+  resource: EventResource<EventResourceKind.CRMContact>;
+}
+
+export interface CRMContactAssignedEvent extends IEvent<EventKind.CRMContactAssigned> {
+  payload: {
+    from: string | null;
+    to: string;
+  };
+  resource: EventResource<EventResourceKind.CRMContact>;
+}
+
+export interface CRMContactUnassignedEvent extends IEvent<EventKind.CRMContactUnassigned> {
+  payload: {
+    from: string;
+  };
+  resource: EventResource<EventResourceKind.CRMContact>;
 }
 
 export interface ICRMDealPipeline {
@@ -681,6 +855,38 @@ export interface ICRMDeal {
   // properties: Record<string, unknown>;
 }
 
+export interface CRMDealCreatedEvent extends IEvent<EventKind.CRMDealCreated> {
+  payload: {
+    id: string;
+    name: string;
+    description: string | null;
+    company: string | null;
+    contact: string | null;
+    kind: string | null;
+    stage: string;
+    priority: string | null;
+    value: DatabaseMonetaryValue | null;
+    closed_at: string | null;
+    assigned_to: string | null;
+  };
+  resource: EventResource<EventResourceKind.CRMDeal>;
+}
+
+export interface CRMDealAssignedEvent extends IEvent<EventKind.CRMDealAssigned> {
+  payload: {
+    from: string | null;
+    to: string;
+  };
+  resource: EventResource<EventResourceKind.CRMDeal>;
+}
+
+export interface CRMDealUnassignedEvent extends IEvent<EventKind.CRMDealUnassigned> {
+  payload: {
+    from: string;
+  };
+  resource: EventResource<EventResourceKind.CRMDeal>;
+}
+
 export interface CRMEnvironmentConfig {
   environment: string;
   workspace: string;
@@ -688,13 +894,13 @@ export interface CRMEnvironmentConfig {
   contact_schema: DatabaseSchema;
   company_schema: DatabaseSchema;
   deal_schema: DatabaseSchema;
-  note_schema: Record<CRMNoteKind, DatabaseSchema>;
+  notes_schema: Record<CRMNotesKind, DatabaseSchema>;
 
   created_at: string;
   updated_at: string | null;
 }
 
-export enum CRMNoteKind {
+export enum CRMNotesKind {
   Meeting = 'meeting',
   Call = 'call',
   Email = 'email',
@@ -825,8 +1031,7 @@ export enum UserAuthAttemptFailureReason {
   UserSuspended = 'user_suspended',
 }
 
-export interface IUserManagementEventUserIdentityCreated extends IEvent {
-  kind: EventKind.UserIdentityCreated;
+export interface IUserManagementEventUserIdentityCreated extends IEvent<EventKind.UserIdentityCreated> {
   payload: {
     provisionedWith: ProvisionedWith;
     isSecondaryIdentity?: boolean;
