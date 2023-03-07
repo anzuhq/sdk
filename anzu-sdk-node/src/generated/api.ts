@@ -288,6 +288,9 @@ export enum EventKind {
   CRMDealUnassigned = 'crm.deal_unassigned',
 
   CRMCommentCreated = 'crm.comment_created',
+
+  CRMNotesCreated = 'crm.notes_created',
+  CRMNotesUpdated = 'crm.notes_updated',
 }
 
 export enum EventActorKind {
@@ -302,6 +305,7 @@ export enum EventResourceKind {
   CRMCompany = 'crm.company',
   CRMDeal = 'crm.deal',
   CRMNotes = 'crm.notes',
+  CRMComment = 'crm.comment',
 }
 
 export type AllEvents =
@@ -316,7 +320,9 @@ export type AllEvents =
   | CRMCompanyCreatedEvent
   | CRMContactCreatedEvent
   | CRMDealCreatedEvent
-  | CRMCommentCreatedEvent;
+  | CRMCommentCreatedEvent
+  | CRMNotesCreatedEvent
+  | CRMNotesUpdatedEvent;
 
 export type EventActor = EventWorkspaceMemberActor | EventSystemActor;
 
@@ -485,7 +491,6 @@ export enum DatabaseRelatedEntity {
   CRMCompany = 'crm_company',
   CRMContact = 'crm_contact',
   CRMDeal = 'crm_deal',
-  CRMNote = 'crm_note',
   UserManagementUserIdentity = 'user_management_user_identity',
   WorkspaceMember = 'workspace_member',
 }
@@ -657,12 +662,7 @@ export interface CRMCommentCreatedEvent extends IEvent<EventKind.CRMCommentCreat
     created_by: string;
     content: RootNode;
   };
-  // Use resource as parent identifier
-  resource:
-    | EventResource<EventResourceKind.CRMCompany>
-    | EventResource<EventResourceKind.CRMDeal>
-    | EventResource<EventResourceKind.CRMContact>
-    | EventResource<EventResourceKind.CRMNotes>;
+  resource: EventResource<EventResourceKind.CRMComment>;
 }
 
 export enum RichTextNodeKind {
@@ -900,6 +900,62 @@ export interface CRMEnvironmentConfig {
   updated_at: string | null;
 }
 
+export interface CRMConfigResp {
+  config: CRMEnvironmentConfig;
+}
+
+export interface ICRMNotes {
+  id: string;
+  environment: string;
+
+  kind: CRMNotesKind;
+
+  title: string;
+
+  primary_resource: CRMNotesPrimaryResource;
+  company: string | null;
+  contact: string | null;
+  deal: string | null;
+
+  created_at: string;
+  updated_at: string | null;
+
+  created_by: string | null;
+
+  content: RootNode;
+
+  // properties are flattened
+  // properties: Record<string, unknown>;
+}
+
+export interface CRMNotesCreatedEvent extends IEvent<EventKind.CRMNotesCreated> {
+  payload: {
+    id: string;
+    kind: CRMNotesKind;
+
+    created_at: string;
+
+    content: RootNode;
+  };
+  resource: EventResource<EventResourceKind.CRMNotes>;
+}
+
+export interface CRMNotesUpdatedEvent extends IEvent<EventKind.CRMNotesUpdated> {
+  payload: {
+    id: string;
+    kind: CRMNotesKind;
+    content?: RootNode;
+    title?: string;
+  };
+  resource: EventResource<EventResourceKind.CRMNotes>;
+}
+
+export enum CRMNotesPrimaryResource {
+  Contact = 'contact',
+  Company = 'company',
+  Deal = 'deal',
+}
+
 export enum CRMNotesKind {
   Meeting = 'meeting',
   Call = 'call',
@@ -908,10 +964,6 @@ export enum CRMNotesKind {
   WhatsAppMessage = 'whatsapp_message',
   LinkedInMessage = 'linkedin_message',
   PostalMail = 'postal_mail',
-}
-
-export interface CRMConfigResp {
-  config: CRMEnvironmentConfig;
 }
 
 export interface InsightsEvent {
