@@ -773,6 +773,11 @@ export interface ICRMContact {
   stage: string | null;
   assigned_to: string | null;
 
+  source: string | null;
+  referrer: string | null;
+
+  linkedin_url: string | null;
+
   // we should flatten properties on the contact object
   // so that fetching and updating happens on one layer
   // and there's no different between "immediate" and "nested" properties
