@@ -22,7 +22,7 @@ export interface WorkspaceRole {
   workspace: string;
   name: string;
   description: string | null;
-  scopes: string[];
+  scopes: Scopes;
   created_at: string;
   updated_at: string | null;
   is_system: boolean;
@@ -83,7 +83,7 @@ export interface AccessTokenBase {
   description: string;
   token: string;
 
-  scopes: string[];
+  scopes: Scopes | null;
   expires_at: string;
 
   kind: AccessTokenKind;
@@ -102,6 +102,7 @@ export interface PersonalAccessToken extends AccessTokenBase {
 
   account: string;
   workspace: null;
+  scopes: null;
 }
 
 export interface WorkspaceAccessToken extends AccessTokenBase {
@@ -109,6 +110,7 @@ export interface WorkspaceAccessToken extends AccessTokenBase {
 
   account: null;
   workspace: string;
+  scopes: Scopes;
 }
 
 export interface AuthAttempt {
@@ -338,6 +340,60 @@ export interface IWebhookDeliveryContent extends IEvent {
     webhookId: string;
     deliveryId: string;
   };
+}
+
+export interface Scopes {
+  workspaceScopes: WorkspaceScope[];
+
+  environments: string[];
+  environmentScopes: EnvironmentScope[];
+}
+
+export enum WorkspaceScope {
+  AccessTokensRead = 'access_tokens:read',
+  AccessTokensWrite = 'access_tokens:write',
+
+  MembersWrite = 'members:write',
+}
+
+export enum EnvironmentScope {
+  WebhooksRead = 'webhooks:read',
+  WebhooksWrite = 'webhooks:write',
+
+  EventsRead = 'events:read',
+  EventsWrite = 'events:write',
+
+  CRMConfigWrite = 'crm:config:write',
+
+  CRMNotesRead = 'crm:notes:read',
+  CRMNotesWrite = 'crm:notes:write',
+
+  CRMContactsRead = 'crm:contacts:read',
+  CRMContactsWrite = 'crm:contacts:write',
+
+  CRMCompaniesRead = 'crm:companies:read',
+  CRMCompaniesWrite = 'crm:companies:write',
+
+  CRMDealsRead = 'crm:deals:read',
+  CRMDealsWrite = 'crm:deals:write',
+
+  CRMCommentsRead = 'crm:comments:read',
+  CRMCommentsWrite = 'crm:comments:write',
+
+  InsightsConfigWrite = 'insights:config:write',
+
+  InsightsUsageRead = 'insights:usage:read',
+  InsightsEventsRead = 'insights:events:read',
+
+  UserManagementConfigWrite = 'user_management:config:write',
+
+  UserManagementUserIdentitiesRead = 'user_management:user_identities:read',
+  UserManagementUserIdentitiesWrite = 'user_management:user_identities:write',
+
+  UserManagementAccessTokensRead = 'user_management:access_tokens:read',
+  UserManagementAccessTokensWrite = 'user_management:access_tokens:write',
+
+  UserManagementAuthAttemptsRead = 'user_management:auth_attempts:read',
 }
 
 export interface AccountResponse {
@@ -778,6 +834,8 @@ export interface ICRMContact {
 
   linkedin_url: string | null;
 
+  unsubscribed_from_all_emails: boolean | null;
+
   // we should flatten properties on the contact object
   // so that fetching and updating happens on one layer
   // and there's no different between "immediate" and "nested" properties
@@ -800,6 +858,7 @@ export interface CRMContactCreatedEvent extends IEvent<EventKind.CRMContactCreat
     assigned_to?: string | null;
     source?: string | null;
     referrer?: string | null;
+    unsubscribed_from_all_emails?: boolean | null;
   };
   resource: EventResource<EventResourceKind.CRMContact>;
 }
